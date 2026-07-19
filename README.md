@@ -44,6 +44,16 @@ npm run build   # baut Frontend und Server
 npm start       # ein Server auf http://localhost:3001 liefert App + API aus
 ```
 
+## iPhone-Kalender verbinden
+
+Der Server stellt unter `/api/calendar.ics` einen iCalendar-Feed bereit, der alle **offenen Aufgaben mit Fälligkeitsdatum** als ganztägige Termine enthält.
+
+1. Rechner und iPhone müssen im selben WLAN sein; die IP-Adresse des Rechners herausfinden (macOS: *Systemeinstellungen → WLAN*, Windows: `ipconfig`).
+2. Auf dem iPhone: *Einstellungen → Apps → Kalender → Accounts → Account hinzufügen → Andere → Kalenderabo*.
+3. Als Server-Adresse eintragen: `http://<IP-des-Rechners>:3001/api/calendar.ics`
+
+Die Aufgaben erscheinen als eigener Kalender „Aufgaben (Assistent)“. Das Abo ist **nur lesend** und wird von Apple periodisch aktualisiert; erledigte Aufgaben verschwinden beim nächsten Abgleich. Soll der Kalender auch unterwegs erreichbar sein, muss die App im Internet deployt werden (dann die öffentliche URL abonnieren).
+
 ## Technik
 
 - **Backend:** Node.js, Express, better-sqlite3, TypeScript (`server/`)

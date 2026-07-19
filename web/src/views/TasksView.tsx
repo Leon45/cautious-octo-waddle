@@ -18,6 +18,19 @@ export default function TasksView() {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const calendarUrl = `${window.location.origin}/api/calendar.ics`;
+
+  async function copyCalendarUrl() {
+    try {
+      await navigator.clipboard.writeText(calendarUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard nicht verfügbar (z. B. ohne HTTPS) — URL bleibt zum manuellen Kopieren sichtbar
+    }
+  }
 
   const reload = () => getTasks().then(setTasks).catch((e) => setError(String(e.message ?? e)));
 
@@ -115,6 +128,23 @@ export default function TasksView() {
         </>
       )}
       <p className="hint">Tipp: Du kannst Aufgaben auch im Chat anlegen – „Erinnere mich am Freitag an …“</p>
+      <div className="hint">
+        <strong>📅 Mit dem iPhone-Kalender verbinden:</strong> Abonniere auf dem iPhone unter{" "}
+        <em>Einstellungen → Apps → Kalender → Accounts → Account hinzufügen → Andere → Kalenderabo</em> diese
+        Adresse – fällige Aufgaben erscheinen dann als Termine:
+        <div className="cal-row">
+          <code className="cal-url">{calendarUrl}</code>
+          <button className="btn subtle" type="button" onClick={() => void copyCalendarUrl()}>
+            {copied ? "✓ Kopiert" : "Kopieren"}
+          </button>
+        </div>
+        {["localhost", "127.0.0.1"].includes(window.location.hostname) && (
+          <p className="cal-note">
+            Hinweis: Ersetze „{window.location.hostname}“ dabei durch die IP-Adresse dieses Rechners im WLAN
+            (z. B. 192.168.1.20) – dein iPhone muss den Rechner erreichen können.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

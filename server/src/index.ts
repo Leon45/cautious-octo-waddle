@@ -4,6 +4,7 @@ import path from "path";
 dotenv.config({ path: path.join(__dirname, "..", "..", ".env") });
 
 import express from "express";
+import { calendarRouter } from "./routes/calendar";
 import { cardsRouter } from "./routes/cards";
 import { chatRouter } from "./routes/chat";
 import { notesRouter } from "./routes/notes";
@@ -16,6 +17,7 @@ app.use("/api/tasks", tasksRouter);
 app.use("/api/notes", notesRouter);
 app.use("/api/learn", cardsRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/calendar.ics", calendarRouter);
 
 // Produktion: gebautes Frontend ausliefern
 const webDist = path.join(__dirname, "..", "..", "web", "dist");

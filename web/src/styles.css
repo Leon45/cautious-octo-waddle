@@ -310,6 +310,28 @@ body {
   color: var(--danger);
 }
 
+.cal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.cal-url {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.82rem;
+  word-break: break-all;
+}
+
+.cal-note {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+}
+
 /* --- Notizen --- */
 
 .note-form {
