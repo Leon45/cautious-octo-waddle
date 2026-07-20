@@ -28,7 +28,7 @@ Einfach die Datei **`index.html`** im Browser öffnen (Doppelklick genügt). Es 
 | Löschen | `Entf` oder Knopf in der Auswahl-Karte |
 | Auswahl aufheben | `Esc` oder ins Leere klicken |
 
-Beim ersten Start wird eine Beispielwohnung geladen, die sich beliebig anpassen oder über *Alles löschen* entfernen lässt.
+Beim ersten Start ist bereits eine konkrete **2-Zimmer-Wohnung (54,59 m²)** nach Grundriss eingebaut — Wohnen, Schlafen, Küche (L-Zeile), Flur, Bad und Balkon inkl. passender Möblierung. Über *Wohnung laden* lässt sie sich jederzeit wiederherstellen, mit *Alles löschen* leerst du den Plan. Die Datei `wohnung.json` enthält denselben Stand zum *Import* auf einem anderen Gerät.
 
 ## Technik
 
