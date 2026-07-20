@@ -11,7 +11,9 @@ Einfach die Datei **`index.html`** im Browser öffnen (Doppelklick genügt). Es 
 - **Räume anlegen**: Name, Breite und Tiefe eingeben — der Raum erscheint mit Wänden und beschriftetem Boden. Zum Verschieben erst anklicken, dann ziehen.
 - **Möbel-Katalog**: 20 typische Möbelstücke (Bett, Sofa, Esstisch, Küchenzeile, Badewanne, …) mit realistischen Standardmaßen. Maße, Farbe und Name lassen sich pro Möbelstück anpassen.
 - **Verschieben & Drehen**: Möbel anklicken und ziehen; drehen über den Regler in der Auswahl-Karte, den +90°-Knopf oder die Taste `R` (mit `Shift` in 90°-Schritten).
+- **Türen & Fenster**: Wände haben echte Öffnungen — Türen mit Zarge (Durchgänge zwischen den Räumen) und Fenster mit Rahmen, Brüstung und Glas auf den Außenwänden.
 - **Intelligente Wände**: Wände, die die Sicht in einen Raum verdecken würden, werden automatisch ausgeblendet (Puppenhaus-Effekt).
+- **Balkon-Geländer**: Der Balkon wird als offene Fläche mit niedrigem Geländer statt geschlossener Wände dargestellt.
 - **Ansichten**: frei drehbar/zoombar, plus Schnellknöpfe für 3D-Ansicht und Draufsicht.
 - **Automatisches Speichern**: Die Planung wird im Browser (localStorage) gespeichert. Über *Export/Import* lässt sie sich als JSON-Datei sichern oder auf ein anderes Gerät übertragen.
 - **Rückgängig**: `Strg+Z` oder der ↩-Knopf.
@@ -28,7 +30,7 @@ Einfach die Datei **`index.html`** im Browser öffnen (Doppelklick genügt). Es 
 | Löschen | `Entf` oder Knopf in der Auswahl-Karte |
 | Auswahl aufheben | `Esc` oder ins Leere klicken |
 
-Beim ersten Start ist bereits eine konkrete **2-Zimmer-Wohnung (54,59 m²)** nach Grundriss eingebaut — Wohnen, Schlafen, Küche (L-Zeile), Flur, Bad und Balkon inkl. passender Möblierung. Über *Wohnung laden* lässt sie sich jederzeit wiederherstellen, mit *Alles löschen* leerst du den Plan. Die Datei `wohnung.json` enthält denselben Stand zum *Import* auf einem anderen Gerät.
+Beim ersten Start ist bereits eine konkrete **2-Zimmer-Wohnung (54,59 m²)** nach Grundriss eingebaut — Wohnen, Schlafen, Küche (L-Zeile) mit Speisekammer, Flur, Bad und Balkon inkl. passender Möblierung, Türen zwischen den Räumen und Fenstern auf den Außenwänden. Über *Wohnung laden* lässt sie sich jederzeit wiederherstellen, mit *Alles löschen* leerst du den Plan. Die Datei `wohnung.json` enthält denselben Stand zum *Import* auf einem anderen Gerät.
 
 ## Technik
 
