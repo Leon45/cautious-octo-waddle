@@ -58,6 +58,9 @@
   .cat:hover{border-color:var(--accent); background:var(--accent-soft);}
   .cat b{font-size:12.5px; display:block;}
   .cat span{font-size:10.5px; color:var(--muted);}
+  .catcat{grid-column:1/-1; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--accent); margin:6px 0 1px;}
+  .catcat:first-child{margin-top:0;}
 
   .note{font-size:11.5px; color:var(--muted); line-height:1.5; margin-top:8px;}
 
@@ -89,6 +92,30 @@
 
   #menuBtn{display:none; position:absolute; top:12px; left:12px; z-index:30; padding:7px 11px; font-size:16px;}
 
+  /* ---------- Möbel-Assistent (Chat) ---------- */
+  #chatToggle{position:absolute; right:12px; bottom:12px; z-index:40; padding:10px 15px; font-size:13px; font-weight:600;
+    background:var(--accent); color:#fff; border:none; border-radius:24px; box-shadow:0 4px 16px rgba(37,99,235,.35);}
+  #chatToggle:hover{background:#1d4ed8;}
+  #chatPanel{position:absolute; right:12px; bottom:12px; z-index:41; width:328px; max-width:calc(100% - 24px);
+    height:460px; max-height:calc(100% - 24px); background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    box-shadow:0 12px 40px rgba(15,30,60,.22); display:none; flex-direction:column; overflow:hidden;}
+  #chatPanel.open{display:flex;}
+  #chatPanel header{display:flex; align-items:center; justify-content:space-between; padding:11px 14px;
+    background:var(--accent); color:#fff; font-size:13.5px; font-weight:600;}
+  #chatPanel header button{background:rgba(255,255,255,.18); border:none; color:#fff; border-radius:6px; padding:2px 8px; font-size:13px;}
+  #chatPanel header button:hover{background:rgba(255,255,255,.32);}
+  #chatLog{flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; background:#f7f9fc;}
+  .msg{max-width:86%; padding:8px 11px; border-radius:12px; font-size:12.8px; line-height:1.45; white-space:pre-wrap; word-wrap:break-word;}
+  .msg.bot{align-self:flex-start; background:#fff; border:1px solid var(--line); border-bottom-left-radius:4px;}
+  .msg.user{align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:4px;}
+  #chatChips{display:flex; flex-wrap:wrap; gap:5px; padding:8px 10px 0;}
+  #chatChips button{font-size:11px; padding:4px 9px; border-radius:20px; border:1px solid var(--line); background:#fff; color:var(--accent);}
+  #chatChips button:hover{background:var(--accent-soft);}
+  #chatForm{display:flex; gap:6px; padding:10px; border-top:1px solid var(--line);}
+  #chatForm input{flex:1;}
+  #chatForm button{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; padding:6px 12px;}
+  #chatForm button:hover{background:#1d4ed8;}
+
   @media (max-width:760px){
     #menuBtn{display:block;}
     #sidebar{position:absolute; left:0; top:0; bottom:0; transform:translateX(-100%); transition:transform .2s; box-shadow:4px 0 24px rgba(0,0,0,.12);}
@@ -119,8 +146,9 @@
 
     <section>
       <h2>Möbel-Katalog</h2>
+      <input type="text" id="catSearch" placeholder="🔍 Möbel suchen (z. B. Bett, Lampe …)" style="margin-bottom:10px">
       <div id="catalog"></div>
-      <p class="note">Klick fügt das Möbelstück in den ausgewählten Raum (oder die Bildmitte) ein. Danach einfach ziehen.</p>
+      <p class="note">Klick fügt das Möbelstück in den ausgewählten Raum (oder die Bildmitte) ein. Oder nutze unten den <b>Möbel-Assistenten</b>.</p>
     </section>
 
     <section>
@@ -151,6 +179,20 @@
       <b>Möbel</b> anklicken &amp; ziehen &nbsp;·&nbsp; <b>R</b> drehen &nbsp;·&nbsp; <b>Entf</b> löschen
     </div>
     <div id="toast" class="overlay"></div>
+
+    <button id="chatToggle" title="Möbel-Assistent">💬 Assistent</button>
+    <div id="chatPanel">
+      <header>
+        <span>💬 Möbel-Assistent</span>
+        <button id="chatClose" title="Schließen">✕</button>
+      </header>
+      <div id="chatLog"></div>
+      <div id="chatChips"></div>
+      <form id="chatForm">
+        <input type="text" id="chatInput" autocomplete="off" placeholder="z. B. großes Bett ins Schlafzimmer">
+        <button type="submit" title="Senden">➤</button>
+      </form>
+    </div>
   </main>
 </div>
 
@@ -175,29 +217,77 @@ const STORAGE_KEY = 'wohnungsplaner3d-v2';
 const WALL_H = 2.5, WALL_T = 0.08, FLOOR_T = 0.06, SNAP = 0.05;
 
 /* ---------------- Möbel-Katalog ---------------- */
+// cat = Kategorie (für Gruppierung), syn = Suchbegriffe für den Assistenten
 const CATALOG = [
-  {type:'bett140',      name:'Bett 140×200',  w:1.4, d:2.0,  h:0.45, color:'#8aa7c9', kind:'bed'},
-  {type:'bett180',      name:'Bett 180×200',  w:1.8, d:2.0,  h:0.45, color:'#8aa7c9', kind:'bed'},
-  {type:'sofa',         name:'Sofa',          w:2.2, d:0.95, h:0.75, color:'#5b7d9e', kind:'sofa'},
-  {type:'sessel',       name:'Sessel',        w:0.9, d:0.85, h:0.75, color:'#6f8fae', kind:'sofa'},
-  {type:'couchtisch',   name:'Couchtisch',    w:1.1, d:0.6,  h:0.45, color:'#a5825d', kind:'table'},
-  {type:'esstisch',     name:'Esstisch',      w:1.6, d:0.9,  h:0.75, color:'#a5825d', kind:'table'},
-  {type:'stuhl',        name:'Stuhl',         w:0.45,d:0.5,  h:0.85, color:'#8d6e4d', kind:'chair'},
-  {type:'schreibtisch', name:'Schreibtisch',  w:1.4, d:0.7,  h:0.75, color:'#b18d63', kind:'table'},
-  {type:'schrank',      name:'Kleiderschrank',w:2.0, d:0.6,  h:2.2,  color:'#c9b394', kind:'box'},
-  {type:'regal',        name:'Regal',         w:0.8, d:0.35, h:1.9,  color:'#c9b394', kind:'shelf'},
-  {type:'tv',           name:'TV-Board + TV', w:1.6, d:0.4,  h:0.5,  color:'#7a6a55', kind:'tv'},
-  {type:'kueche',       name:'Küchenzeile',   w:2.4, d:0.6,  h:0.9,  color:'#9aa5ad', kind:'kitchen'},
-  {type:'kuehlschrank', name:'Kühlschrank',   w:0.6, d:0.65, h:1.8,  color:'#d7dde2', kind:'box'},
-  {type:'waschmaschine',name:'Waschmaschine', w:0.6, d:0.6,  h:0.85, color:'#e3e7ea', kind:'washer'},
-  {type:'badewanne',    name:'Badewanne',     w:1.7, d:0.75, h:0.55, color:'#eef2f4', kind:'bathtub'},
-  {type:'dusche',       name:'Dusche',        w:0.9, d:0.9,  h:2.0,  color:'#bcd6de', kind:'shower'},
-  {type:'wc',           name:'WC',            w:0.4, d:0.65, h:0.8,  color:'#f0f3f5', kind:'wc'},
-  {type:'waschbecken',  name:'Waschbecken',   w:0.6, d:0.45, h:0.85, color:'#e8edf0', kind:'box'},
-  {type:'pflanze',      name:'Pflanze',       w:0.45,d:0.45, h:1.2,  color:'#5a8b5e', kind:'plant'},
-  {type:'teppich',      name:'Teppich',       w:2.0, d:1.5,  h:0.02, color:'#b56576', kind:'rug'},
+  // --- Wohnen ---
+  {type:'sofa',        name:'Sofa (3-Sitzer)', w:2.2, d:0.95, h:0.75, color:'#5b7d9e', kind:'sofa',   cat:'Wohnen', syn:'couch sofa dreisitzer'},
+  {type:'sofa2',       name:'Sofa (2-Sitzer)', w:1.6, d:0.95, h:0.75, color:'#5b7d9e', kind:'sofa',   cat:'Wohnen', syn:'couch zweisitzer'},
+  {type:'ecksofa',     name:'Ecksofa',         w:2.6, d:1.9,  h:0.75, color:'#556f8c', kind:'sofa',   cat:'Wohnen', syn:'ecksofa l-sofa couch eck'},
+  {type:'sessel',      name:'Sessel',          w:0.9, d:0.85, h:0.75, color:'#6f8fae', kind:'sofa',   cat:'Wohnen', syn:'sessel armchair fauteuil'},
+  {type:'couchtisch',  name:'Couchtisch',      w:1.1, d:0.6,  h:0.45, color:'#a5825d', kind:'table',  cat:'Wohnen', syn:'couchtisch beistelltisch wohnzimmertisch'},
+  {type:'beistelltisch',name:'Beistelltisch',  w:0.45,d:0.45, h:0.55, color:'#a5825d', kind:'table',  cat:'Wohnen', syn:'beistelltisch nachttisch klein'},
+  {type:'tv',          name:'TV-Board + TV',   w:1.6, d:0.4,  h:0.5,  color:'#7a6a55', kind:'tv',     cat:'Wohnen', syn:'tv fernseher lowboard tvboard'},
+  {type:'buecherregal',name:'Bücherregal',     w:1.2, d:0.35, h:2.0,  color:'#c1a878', kind:'shelf',  cat:'Wohnen', syn:'buecherregal bücherregal regal bücher'},
+  {type:'kommode',     name:'Kommode',         w:1.2, d:0.45, h:0.8,  color:'#bfa87d', kind:'box',    cat:'Wohnen', syn:'kommode sideboard anrichte'},
+  {type:'sideboard',   name:'Sideboard',       w:1.8, d:0.45, h:0.75, color:'#b39c72', kind:'box',    cat:'Wohnen', syn:'sideboard lowboard anrichte'},
+  {type:'stehlampe',   name:'Stehlampe',       w:0.4, d:0.4,  h:1.6,  color:'#d8cbb0', kind:'lamp',   cat:'Wohnen', syn:'stehlampe lampe leuchte'},
+  {type:'kaminofen',   name:'Kaminofen',       w:0.6, d:0.5,  h:1.1,  color:'#3a3f45', kind:'box',    cat:'Wohnen', syn:'kamin kaminofen ofen'},
+  {type:'klavier',     name:'Klavier',         w:1.5, d:0.6,  h:1.1,  color:'#26292e', kind:'box',    cat:'Wohnen', syn:'klavier piano'},
+  // --- Schlafen ---
+  {type:'bett140',     name:'Bett 140×200',    w:1.4, d:2.0,  h:0.45, color:'#8aa7c9', kind:'bed',    cat:'Schlafen', syn:'bett doppelbett franzoesisch 140'},
+  {type:'bett160',     name:'Bett 160×200',    w:1.6, d:2.0,  h:0.45, color:'#8aa7c9', kind:'bed',    cat:'Schlafen', syn:'doppelbett 160'},
+  {type:'bett180',     name:'Bett 180×200',    w:1.8, d:2.0,  h:0.45, color:'#8aa7c9', kind:'bed',    cat:'Schlafen', syn:'doppelbett 180 kingsize king'},
+  {type:'bett90',      name:'Bett 90×200',     w:0.9, d:2.0,  h:0.45, color:'#8aa7c9', kind:'bed',    cat:'Schlafen', syn:'einzelbett einzel 90'},
+  {type:'nachttisch',  name:'Nachttisch',      w:0.45,d:0.4,  h:0.5,  color:'#bfa87d', kind:'box',    cat:'Schlafen', syn:'nachttisch nachtschrank'},
+  {type:'schrank',     name:'Kleiderschrank',  w:2.0, d:0.6,  h:2.2,  color:'#c9b394', kind:'box',    cat:'Schlafen', syn:'kleiderschrank schrank wardrobe'},
+  {type:'schrankgross',name:'Kleiderschrank XL',w:2.5,d:0.6,  h:2.2,  color:'#c9b394', kind:'box',    cat:'Schlafen', syn:'kleiderschrank gross schrank xl'},
+  {type:'schminktisch',name:'Schminktisch',    w:1.0, d:0.45, h:0.75, color:'#c1a878', kind:'table',  cat:'Schlafen', syn:'schminktisch frisiertisch'},
+  // --- Essen ---
+  {type:'esstisch',    name:'Esstisch',        w:1.6, d:0.9,  h:0.75, color:'#a5825d', kind:'table',  cat:'Essen', syn:'esstisch tisch esszimmertisch'},
+  {type:'esstischxl',  name:'Esstisch (groß)', w:2.0, d:1.0,  h:0.75, color:'#a5825d', kind:'table',  cat:'Essen', syn:'esstisch gross tafel'},
+  {type:'stuhl',       name:'Stuhl',           w:0.45,d:0.5,  h:0.85, color:'#8d6e4d', kind:'chair',  cat:'Essen', syn:'stuhl stühle stuehle sitz'},
+  {type:'barhocker',   name:'Barhocker',       w:0.4, d:0.4,  h:1.05, color:'#7d6247', kind:'chair',  cat:'Essen', syn:'barhocker hocker'},
+  {type:'sitzbank',    name:'Sitzbank',        w:1.4, d:0.4,  h:0.48, color:'#8d6e4d', kind:'box',    cat:'Essen', syn:'sitzbank bank'},
+  // --- Büro ---
+  {type:'schreibtisch',name:'Schreibtisch',    w:1.4, d:0.7,  h:0.75, color:'#b18d63', kind:'table',  cat:'Büro', syn:'schreibtisch tisch desk arbeitstisch'},
+  {type:'eckschreibtisch',name:'Eckschreibtisch',w:1.6,d:1.4, h:0.75, color:'#b18d63', kind:'table',  cat:'Büro', syn:'eckschreibtisch schreibtisch eck'},
+  {type:'buerostuhl',  name:'Bürostuhl',       w:0.6, d:0.6,  h:1.1,  color:'#3f4348', kind:'chair',  cat:'Büro', syn:'bürostuhl buerostuhl drehstuhl'},
+  {type:'aktenregal',  name:'Aktenregal',      w:0.8, d:0.4,  h:1.9,  color:'#c1a878', kind:'shelf',  cat:'Büro', syn:'aktenregal regal akten'},
+  // --- Küche ---
+  {type:'kueche',      name:'Küchenzeile',     w:2.4, d:0.6,  h:0.9,  color:'#9aa5ad', kind:'kitchen',cat:'Küche', syn:'küchenzeile kuechenzeile küche kueche'},
+  {type:'kuechekurz',  name:'Küchenzeile kurz',w:1.8, d:0.6,  h:0.9,  color:'#9aa5ad', kind:'kitchen',cat:'Küche', syn:'küchenzeile kurz kueche klein'},
+  {type:'kucheninsel', name:'Kücheninsel',     w:1.8, d:0.9,  h:0.9,  color:'#9aa5ad', kind:'box',    cat:'Küche', syn:'kücheninsel insel kochinsel'},
+  {type:'kuehlschrank',name:'Kühlschrank',     w:0.6, d:0.65, h:1.8,  color:'#d7dde2', kind:'box',    cat:'Küche', syn:'kühlschrank kuehlschrank fridge'},
+  {type:'herd',        name:'Herd/Backofen',   w:0.6, d:0.6,  h:0.9,  color:'#b9c0c6', kind:'box',    cat:'Küche', syn:'herd backofen ofen stove'},
+  {type:'geschirrspueler',name:'Geschirrspüler',w:0.6,d:0.6,  h:0.85, color:'#c9ced3', kind:'box',    cat:'Küche', syn:'geschirrspüler spülmaschine spuelmaschine'},
+  {type:'waschmaschine',name:'Waschmaschine',  w:0.6, d:0.6,  h:0.85, color:'#e3e7ea', kind:'washer', cat:'Küche', syn:'waschmaschine washer'},
+  {type:'trockner',    name:'Trockner',        w:0.6, d:0.6,  h:0.85, color:'#e3e7ea', kind:'washer', cat:'Küche', syn:'trockner wäschetrockner'},
+  // --- Bad ---
+  {type:'badewanne',   name:'Badewanne',       w:1.7, d:0.75, h:0.55, color:'#eef2f4', kind:'bathtub',cat:'Bad', syn:'badewanne wanne bad'},
+  {type:'dusche',      name:'Dusche',          w:0.9, d:0.9,  h:2.0,  color:'#bcd6de', kind:'shower', cat:'Bad', syn:'dusche duschkabine'},
+  {type:'wc',          name:'WC',              w:0.4, d:0.65, h:0.8,  color:'#f0f3f5', kind:'wc',     cat:'Bad', syn:'wc toilette klo'},
+  {type:'waschbecken', name:'Waschbecken',     w:0.6, d:0.45, h:0.85, color:'#e8edf0', kind:'box',    cat:'Bad', syn:'waschbecken waschtisch becken'},
+  {type:'doppelwaschtisch',name:'Doppelwaschtisch',w:1.2,d:0.5,h:0.85,color:'#e8edf0', kind:'box',    cat:'Bad', syn:'doppelwaschtisch waschtisch'},
+  {type:'handtuchheizung',name:'Handtuchheizung',w:0.6,d:0.1, h:1.2,  color:'#eef1f3', kind:'box',    cat:'Bad', syn:'handtuchheizung heizung handtuchhalter'},
+  // --- Aufbewahrung ---
+  {type:'regal',       name:'Regal',           w:0.8, d:0.35, h:1.9,  color:'#c9b394', kind:'shelf',  cat:'Aufbewahrung', syn:'regal shelf standregal'},
+  {type:'garderobe',   name:'Garderobe',       w:1.0, d:0.35, h:1.8,  color:'#bfa87d', kind:'shelf',  cat:'Aufbewahrung', syn:'garderobe flurgarderobe'},
+  {type:'schuhschrank',name:'Schuhschrank',    w:0.9, d:0.35, h:1.1,  color:'#bfa87d', kind:'box',    cat:'Aufbewahrung', syn:'schuhschrank schuhe'},
+  // --- Außen ---
+  {type:'gartenstuhl', name:'Gartenstuhl',     w:0.55,d:0.55, h:0.9,  color:'#7f8a80', kind:'chair',  cat:'Außen', syn:'gartenstuhl balkonstuhl stuhl garten'},
+  {type:'gartentisch', name:'Gartentisch',     w:0.7, d:0.7,  h:0.72, color:'#8a8f86', kind:'table',  cat:'Außen', syn:'gartentisch balkontisch tisch garten'},
+  {type:'liege',       name:'Sonnenliege',     w:0.6, d:1.9,  h:0.4,  color:'#8a9a86', kind:'box',    cat:'Außen', syn:'liege sonnenliege gartenliege'},
+  {type:'grill',       name:'Grill',           w:0.6, d:0.5,  h:1.0,  color:'#3f4348', kind:'box',    cat:'Außen', syn:'grill bbq'},
+  {type:'hochbeet',    name:'Hochbeet',        w:1.0, d:0.5,  h:0.6,  color:'#8a6b4a', kind:'box',    cat:'Außen', syn:'hochbeet beet pflanzkasten'},
+  // --- Deko ---
+  {type:'pflanze',     name:'Pflanze',         w:0.45,d:0.45, h:1.2,  color:'#5a8b5e', kind:'plant',  cat:'Deko', syn:'pflanze zimmerpflanze'},
+  {type:'pflanzegross',name:'Große Pflanze',   w:0.6, d:0.6,  h:1.9,  color:'#4f7f54', kind:'plant',  cat:'Deko', syn:'pflanze gross palme baum'},
+  {type:'teppich',     name:'Teppich',         w:2.0, d:1.5,  h:0.02, color:'#b56576', kind:'rug',    cat:'Deko', syn:'teppich carpet'},
+  {type:'teppichgross',name:'Teppich (groß)',  w:3.0, d:2.0,  h:0.02, color:'#b56576', kind:'rug',    cat:'Deko', syn:'teppich gross'},
+  {type:'spiegel',     name:'Spiegel',         w:0.8, d:0.05, h:1.6,  color:'#cfe0e6', kind:'box',    cat:'Deko', syn:'spiegel'},
 ];
 const CAT_BY_TYPE = Object.fromEntries(CATALOG.map(c => [c.type, c]));
+const CATEGORIES = ['Wohnen','Schlafen','Essen','Büro','Küche','Bad','Aufbewahrung','Außen','Deko'];
 
 /* ---------------- Zustand ---------------- */
 let state = null;          // {rooms:[{id,name,w,d,x,z,floor}], furniture:[{id,type,name,w,d,h,x,z,rot,color}], nextId}
@@ -634,6 +724,15 @@ const BUILDERS = {
     m.castShadow = false;
     g.add(m);
   },
+  lamp(g, i, c){
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(Math.min(i.w,i.d)*0.4, Math.min(i.w,i.d)*0.45, 0.04, 20), stdMat(shade(c,-0.4)));
+    foot.position.y = 0.02; foot.castShadow = true; g.add(foot);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, i.h*0.78, 10), stdMat(shade(c,-0.4)));
+    pole.position.y = i.h*0.42; pole.castShadow = true; g.add(pole);
+    const shadeMesh = new THREE.Mesh(new THREE.CylinderGeometry(Math.min(i.w,i.d)*0.5, Math.min(i.w,i.d)*0.42, i.h*0.22, 20),
+      new THREE.MeshStandardMaterial({color: srgb(c), roughness: 0.8, emissive: srgb('#fff3d6'), emissiveIntensity: 0.35}));
+    shadeMesh.position.y = i.h*0.88; shadeMesh.castShadow = true; g.add(shadeMesh);
+  },
 };
 
 function buildItemGroup(item){
@@ -958,30 +1057,67 @@ function renderRoomList(){
   }
 }
 
-function renderCatalog(){
+function renderCatalog(filter){
   const el = $('catalog');
-  for (const c of CATALOG) {
-    const b = document.createElement('button');
-    b.className = 'cat';
-    b.innerHTML = '<b></b><span></span>';
-    b.querySelector('b').textContent = c.name;
-    b.querySelector('span').textContent = fmtM(c.w) + ' × ' + fmtM(c.d) + ' × ' + fmtM(c.h) + ' m';
-    b.addEventListener('click', () => addFurniture(c));
-    el.appendChild(b);
+  el.innerHTML = '';
+  const q = (filter || '').trim().toLowerCase();
+  const match = c => !q || (c.name + ' ' + (c.syn || '') + ' ' + c.cat).toLowerCase().includes(q);
+  let any = false;
+  for (const cat of CATEGORIES) {
+    const items = CATALOG.filter(c => c.cat === cat && match(c));
+    if (!items.length) continue;
+    any = true;
+    const h = document.createElement('div');
+    h.className = 'catcat'; h.textContent = cat;
+    el.appendChild(h);
+    for (const c of items) {
+      const b = document.createElement('button');
+      b.className = 'cat';
+      b.innerHTML = '<b></b><span></span>';
+      b.querySelector('b').textContent = c.name;
+      b.querySelector('span').textContent = fmtM(c.w) + ' × ' + fmtM(c.d) + ' × ' + fmtM(c.h) + ' m';
+      b.addEventListener('click', () => addFurniture(c));
+      el.appendChild(b);
+    }
   }
+  if (!any) el.innerHTML = '<p class="note" style="grid-column:1/-1;margin:0">Nichts gefunden. Tipp: Der Möbel-Assistent unten kann auch eigene Möbel erstellen.</p>';
+}
+
+// Platzierung: Mittelpunkt eines Zielraums (mit Streuung) oder Bildmitte.
+function placementPos(room, jitter){
+  let x, z;
+  if (room) { x = room.x; z = room.z; }
+  else if (selected && selected.kind === 'room') { const r = findSelected(); x = r.x; z = r.z; }
+  else { x = ctrl.target.x; z = ctrl.target.z; }
+  if (jitter) { x += (Math.random() - 0.5) * 0.8; z += (Math.random() - 0.5) * 0.8; }
+  return {x: snap(x), z: snap(z)};
+}
+
+// Zentrale Erstellungsfunktion — von Katalog UND Assistent genutzt.
+function createFurniture(spec){
+  const cat = spec.type ? CAT_BY_TYPE[spec.type] : null;
+  const item = {
+    id: newId(),
+    type: spec.type || 'custom',
+    name: spec.name || (cat ? cat.name : 'Möbel'),
+    w: Math.max(0.1, spec.w != null ? spec.w : (cat ? cat.w : 1.0)),
+    d: Math.max(0.1, spec.d != null ? spec.d : (cat ? cat.d : 0.6)),
+    h: Math.max(0.02, spec.h != null ? spec.h : (cat ? cat.h : 1.0)),
+    x: snap(spec.x), z: snap(spec.z), rot: spec.rot || 0,
+    color: spec.color || (cat ? cat.color : '#b7a888'),
+  };
+  // Custom-Typ ohne eigenen Builder -> als Kiste darstellen
+  if (!cat && !CAT_BY_TYPE[item.type]) item.type = 'custom';
+  state.furniture.push(item);
+  const g = buildItemGroup(item);
+  furnGroup.add(g); itemGroupById.set(item.id, g);
+  return item;
 }
 
 function addFurniture(cat){
   pushUndo();
-  let x, z;
-  const selRoom = selected && selected.kind === 'room' ? findSelected() : null;
-  if (selRoom) { x = selRoom.x; z = selRoom.z; }
-  else { x = snap(ctrl.target.x); z = snap(ctrl.target.z); }
-  const item = {id: newId(), type: cat.type, name: cat.name, w: cat.w, d: cat.d, h: cat.h,
-    x: snap(x), z: snap(z), rot: 0, color: cat.color};
-  state.furniture.push(item);
-  const g = buildItemGroup(item);
-  furnGroup.add(g); itemGroupById.set(item.id, g);
+  const p = placementPos(null, false);
+  const item = createFurniture({type: cat.type, x: p.x, z: p.z});
   select('furniture', item.id);
   scheduleSave();
   toast(cat.name + ' hinzugefügt – zum Verschieben einfach ziehen');
@@ -1204,6 +1340,189 @@ $('menuBtn').addEventListener('click', () => $('sidebar').classList.toggle('open
 viewport.addEventListener('pointerdown', e => {
   if (e.target === canvas) $('sidebar').classList.remove('open');
 });
+
+/* ---------------- Katalog-Suche ---------------- */
+$('catSearch').addEventListener('input', () => renderCatalog($('catSearch').value));
+
+/* ================================================================
+   Möbel-Assistent (lokaler Chatbot) — versteht deutsche Befehle,
+   um Möbel hinzuzufügen. Läuft komplett offline ohne API.
+   ================================================================ */
+const CHAT_COLORS = {
+  'rot':'#c0392b','dunkelrot':'#7d2b26','weinrot':'#7d2b26','blau':'#3b6fb0','dunkelblau':'#2b3f66',
+  'hellblau':'#8fb4d6','grün':'#4f8a54','gruen':'#4f8a54','dunkelgrün':'#35633a','dunkelgruen':'#35633a',
+  'gelb':'#d8b64a','orange':'#d98a3a','lila':'#7d5ba6','violett':'#7d5ba6','rosa':'#cf7aa0','pink':'#cf7aa0',
+  'braun':'#8a6b4a','beige':'#cdb58a','grau':'#9aa1a8','dunkelgrau':'#55595e','hellgrau':'#d3d8dc',
+  'schwarz':'#26292e','weiß':'#eef1f3','weiss':'#eef1f3','creme':'#e6dcc4','crème':'#e6dcc4',
+  'türkis':'#3fae9f','tuerkis':'#3fae9f','gold':'#c9a24a','anthrazit':'#3a3f45','sand':'#cdb58a',
+};
+const CHAT_NUMWORDS = {'ein':1,'eine':1,'einen':1,'zwei':2,'drei':3,'vier':4,'fünf':5,'fuenf':5,'sechs':6,
+  'sieben':7,'acht':8,'neun':9,'zehn':10,'paar':2,'mehrere':3};
+
+function chatFindRoom(text){
+  for (const r of state.rooms) { if (r.name && text.includes(r.name.toLowerCase())) return r; }
+  const map = [['wohnzimmer','Wohnen'],['wohnen','Wohnen'],['schlafzimmer','Schlafen'],['schlaf','Schlafen'],
+    ['küche','Kochen'],['kueche','Kochen'],['koch','Kochen'],['badezimmer','Bad'],['bad','Bad'],
+    ['flur','Flur'],['diele','Flur'],['balkon','Balkon'],['terrasse','Balkon'],
+    ['speisekammer','Speisekammer'],['speise','Speisekammer'],['kammer','Speisekammer'],['abstell','Speisekammer']];
+  for (const [syn, canon] of map) {
+    if (text.includes(syn)) {
+      const r = state.rooms.find(rr => rr.name.toLowerCase() === canon.toLowerCase())
+             || state.rooms.find(rr => rr.name.toLowerCase().includes(canon.toLowerCase()));
+      if (r) return r;
+    }
+  }
+  return null;
+}
+function chatNum(s){ return parseFloat(s.replace(',', '.')); }
+function chatParseDims(text){
+  const m = text.match(/(\d+(?:[.,]\d+)?)\s*(?:x|×|\*|mal)\s*(\d+(?:[.,]\d+)?)(?:\s*(?:x|×|\*|mal)\s*(\d+(?:[.,]\d+)?))?/);
+  if (!m) return null;
+  const conv = v => { let n = chatNum(v); return n > 5 ? n / 100 : n; }; // >5 => cm
+  const dims = {w: conv(m[1]), d: conv(m[2]), matched: m[0]};
+  if (m[3] != null) dims.h = conv(m[3]);
+  return dims;
+}
+function chatParseColor(text){
+  for (const k in CHAT_COLORS) if (text.includes(k)) return CHAT_COLORS[k];
+  return null;
+}
+function chatParseQty(text){
+  const md = text.match(/(?:^|\s)(\d{1,2})\s*(?:x|×|stück|stuck|mal\b)?\s/);
+  if (md) { const n = parseInt(md[1], 10); if (n >= 1 && n <= 12) return n; }
+  for (const w in CHAT_NUMWORDS) { if (new RegExp('(^|\\s)' + w + '(\\s|$)').test(text)) return CHAT_NUMWORDS[w]; }
+  return 1;
+}
+// Größen-, Farb- und Raumwörter entfernen, damit sie nicht als Möbel „matchen".
+// Raumwörter mit \b -> Möbelnamen wie „Küchenzeile" (küche+n) bleiben erhalten.
+function chatCleanMatch(text){
+  let t = text;
+  t = t.replace(/\b(groß|gross|große|großer|großes|großen|klein|kleine|kleiner|kleines|kleinen|xl|riesig|mini|breit|schmal|lang|kurz|hoch|niedrig|flach|tief)\b/g, ' ');
+  t = t.replace(/\b(rot|dunkelrot|weinrot|blau|dunkelblau|hellblau|grün|gruen|dunkelgrün|dunkelgruen|gelb|orange|lila|violett|rosa|pink|braun|beige|grau|dunkelgrau|hellgrau|schwarz|weiß|weiss|creme|crème|türkis|tuerkis|gold|anthrazit|sand)\b/g, ' ');
+  t = t.replace(/\b(wohnzimmer|wohnen|schlafzimmer|schlafen|küche|kueche|kochen|badezimmer|bad|flur|diele|balkon|terrasse|speisekammer|abstellraum)\b/g, ' ');
+  return t;
+}
+function chatFindItem(text){
+  let best = null, bestLen = 0;
+  for (const c of CATALOG) {
+    const keys = (c.name.toLowerCase().replace(/[^a-zäöüß0-9]+/g, ' ') + ' ' + (c.syn || '')).split(/\s+/).filter(k => k.length >= 3);
+    for (const k of keys) {
+      if (text.includes(k) && k.length > bestLen) { best = c; bestLen = k.length; }
+    }
+  }
+  return best;
+}
+function chatApplySize(text, dims){
+  const has = w => new RegExp('(^|\\s)' + w).test(text);
+  if (has('groß') || has('gross')) { dims.w *= 1.25; dims.d *= 1.25; dims.h *= 1.1; }
+  if (has('xl') || has('riesig')) { dims.w *= 1.5; dims.d *= 1.5; dims.h *= 1.15; }
+  if (has('klein') || has('mini')) { dims.w *= 0.75; dims.d *= 0.75; dims.h *= 0.9; }
+  if (has('breit')) dims.w *= 1.3;
+  if (has('schmal')) dims.w *= 0.7;
+  if (has('lang') || has('tief')) dims.d *= 1.3;
+  if (has('kurz')) dims.d *= 0.7;
+  if (has('hoch')) dims.h *= 1.3;
+  if (has('niedrig') || has('flach')) dims.h *= 0.7;
+  return dims;
+}
+
+function chatBot(msg){ chatAppend('bot', msg); }
+function chatAppend(who, text){
+  const d = document.createElement('div');
+  d.className = 'msg ' + who;
+  d.textContent = text;
+  $('chatLog').appendChild(d);
+  $('chatLog').scrollTop = $('chatLog').scrollHeight;
+}
+
+function chatHandle(raw){
+  const text = ' ' + raw.toLowerCase().trim() + ' ';
+  if (/\b(hilfe|help|was kannst du|wie geht)\b/.test(text)) {
+    chatBot('Ich füge Möbel für dich ein. Schreib z. B.:\n• „großes Bett ins Schlafzimmer"\n• „4 Stühle in die Küche"\n• „rotes Sofa"\n• „Regal 1,2 x 0,4 x 2"\n• „erstelle einen Kicker 1,4 x 0,7"\n\nGeht auch: Menge (2, drei…), Farbe, Raum und Größe (groß/klein/breit/hoch).');
+    return;
+  }
+  if (/\b(liste|welche möbel|katalog|was gibt es)\b/.test(text)) {
+    const byCat = CATEGORIES.map(cat => cat + ': ' + CATALOG.filter(c => c.cat === cat).map(c => c.name).join(', '));
+    chatBot('Im Katalog (' + CATALOG.length + ' Möbel):\n' + byCat.join('\n'));
+    return;
+  }
+  if (/\b(rückgängig|rueckgaengig|lösche das letzte|loesche das letzte|zurück|undo)\b/.test(text)) {
+    undo(); chatBot('Rückgängig gemacht. ↩'); return;
+  }
+
+  const room = chatFindRoom(text);
+  const color = chatParseColor(text);
+  const explicit = chatParseDims(text);
+  let stripped = text;
+  if (explicit) stripped = stripped.replace(explicit.matched, ' ');
+  const qty = chatParseQty(stripped);
+  const matchText = chatCleanMatch(stripped);
+  const item = chatFindItem(matchText);
+  // „erstelle … 1,2 x 0,6" -> immer eigenes Möbel (auch wenn ein Wort einem Katalogmöbel ähnelt)
+  const forceCustom = !!explicit && /\b(erstelle|erstell|eigenes|eigene|custom)\b/.test(text);
+
+  let spec, label;
+  if (item && !forceCustom) {
+    const dims = {w: item.w, d: item.d, h: item.h};
+    if (explicit) { dims.w = explicit.w; dims.d = explicit.d; if (explicit.h != null) dims.h = explicit.h; }
+    else chatApplySize(text, dims);
+    spec = {type: item.type, w: dims.w, d: dims.d, h: dims.h, color};
+    label = item.name;
+  } else {
+    // Kein Katalog-Treffer -> eigenes Möbel aus Resttext bauen
+    let name = matchText
+      .replace(/\b(füge|fuege|hinzu|hinzufügen|hinzufuegen|erstelle|erstellen|mach|mache|bau|baue|setze?|stell|stelle|platziere|leg|lege|gib|brauche|braucht|möchte|moechte|will|bitte|mir|mal|noch|ein|eine|einen|einem|der|die|das|den|dem|ins|in|im|auf|zum|zur|und|neues?|neuen|neuer)\b/g, ' ')
+      .replace(/\b\d+\b/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+    if (!name) {
+      chatBot('Das habe ich nicht erkannt. Nenn mir ein Möbelstück, z. B. „Sofa", „Bett" oder ein eigenes wie „erstelle einen Kicker 1,4 x 0,7". („Hilfe" zeigt Beispiele.)');
+      return;
+    }
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+    const dims = explicit ? {w: explicit.w, d: explicit.d, h: explicit.h != null ? explicit.h : 1.0}
+                          : {w: 1.0, d: 0.6, h: 1.0};
+    if (!explicit) chatApplySize(text, dims);
+    spec = {type: 'custom', name, w: dims.w, d: dims.d, h: dims.h, color};
+    label = name + ' (eigenes Möbel)';
+  }
+
+  const targetRoom = room || (selected && selected.kind === 'room' ? findSelected() : null);
+  pushUndo();
+  let last = null;
+  for (let i = 0; i < qty; i++) {
+    const p = placementPos(targetRoom, qty > 1);
+    last = createFurniture(Object.assign({}, spec, {x: p.x, z: p.z}));
+  }
+  select('furniture', last.id);
+  scheduleSave();
+  const where = targetRoom ? ('in „' + targetRoom.name + '"') : 'in der Bildmitte';
+  chatBot('✓ ' + qty + '× ' + label + ' ' + where + ' eingefügt. Zieh die Möbel zum Feinjustieren einfach an die richtige Stelle.');
+}
+
+// Chat-UI verdrahten
+function chatOpen(){ $('chatPanel').classList.add('open'); $('chatToggle').style.display = 'none'; $('chatInput').focus(); }
+function chatClose(){ $('chatPanel').classList.remove('open'); $('chatToggle').style.display = ''; }
+$('chatToggle').addEventListener('click', chatOpen);
+$('chatClose').addEventListener('click', chatClose);
+$('chatForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = $('chatInput').value.trim();
+  if (!v) return;
+  chatAppend('user', v);
+  $('chatInput').value = '';
+  try { chatHandle(v); }
+  catch (err) { chatBot('Ups, das konnte ich nicht verarbeiten. Versuch es etwas einfacher, z. B. „Sofa ins Wohnzimmer".'); }
+});
+(function initChat(){
+  chatBot('Hallo! Ich bin dein Möbel-Assistent. Sag mir, was du hinzufügen möchtest – z. B. „großes Bett ins Schlafzimmer" oder „4 Stühle in die Küche".');
+  const chips = ['Großes Bett ins Schlafzimmer', 'Sofa ins Wohnzimmer', '4 Stühle in die Küche', 'Stehlampe', 'Bücherregal 1,2×0,4×2', 'Hilfe'];
+  for (const c of chips) {
+    const b = document.createElement('button');
+    b.textContent = c;
+    b.addEventListener('click', () => { $('chatInput').value = c; $('chatForm').requestSubmit(); });
+    $('chatChips').appendChild(b);
+  }
+})();
 
 function refreshUI(){ renderRoomList(); renderSelCard(); }
 

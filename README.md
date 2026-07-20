@@ -9,7 +9,8 @@ Einfach die Datei **`index.html`** im Browser öffnen (Doppelklick genügt). Es 
 ## Funktionen
 
 - **Räume anlegen**: Name, Breite und Tiefe eingeben — der Raum erscheint mit Wänden und beschriftetem Boden. Zum Verschieben erst anklicken, dann ziehen.
-- **Möbel-Katalog**: 20 typische Möbelstücke (Bett, Sofa, Esstisch, Küchenzeile, Badewanne, …) mit realistischen Standardmaßen. Maße, Farbe und Name lassen sich pro Möbelstück anpassen.
+- **Möbel-Katalog**: über 50 Möbelstücke in Kategorien (Wohnen, Schlafen, Essen, Büro, Küche, Bad, Aufbewahrung, Außen, Deko) mit realistischen Standardmaßen und Suchfeld. Maße, Farbe und Name lassen sich pro Möbelstück anpassen.
+- **Möbel-Assistent (Chat)**: ein lokaler Assistent (unten rechts), der deutsche Befehle versteht und Möbel direkt platziert — z. B. „*großes Bett ins Schlafzimmer*", „*4 Stühle in die Küche*", „*rotes Sofa*" oder „*erstelle einen Billardtisch 2,2 × 1,2 × 0,8*". Erkennt Menge, Zielraum, Farbe, Größe (groß/klein/breit/hoch) und Maße; unbekannte Möbel werden als eigenes Möbelstück angelegt. Läuft komplett offline, ohne Internet oder API-Schlüssel.
 - **Verschieben & Drehen**: Möbel anklicken und ziehen; drehen über den Regler in der Auswahl-Karte, den +90°-Knopf oder die Taste `R` (mit `Shift` in 90°-Schritten).
 - **Türen & Fenster**: Wände haben echte Öffnungen — Türen mit Zarge (Durchgänge zwischen den Räumen) und Fenster mit Rahmen, Brüstung und Glas auf den Außenwänden.
 - **Intelligente Wände**: Wände, die die Sicht in einen Raum verdecken würden, werden automatisch ausgeblendet (Puppenhaus-Effekt).
